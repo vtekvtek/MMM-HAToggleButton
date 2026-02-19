@@ -2,7 +2,7 @@
 
 Module.register("MMM-HAToggleButton", {
   defaults: {
-    haUrl: "http://homeassistant.local:8123",
+    haUrl: "",
     token: "",
 
     // No entities here, must be provided in config.js
@@ -123,3 +123,4 @@ Module.register("MMM-HAToggleButton", {
     }
   }
 });
+

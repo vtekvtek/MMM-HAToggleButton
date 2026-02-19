@@ -1,0 +1,26 @@
+.haToggleWrap {
+  width: 260px;
+}
+
+.haToggleButton {
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.haToggleButton.isOn {
+  border-color: rgba(255,255,255,0.75);
+}
+
+.haLabel {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.haState {
+  margin-top: 6px;
+  font-size: 14px;
+  opacity: 0.85;
+}

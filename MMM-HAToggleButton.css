@@ -81,4 +81,15 @@
 .haToggleRow.isBusy {
   opacity: 0.65;
 }
+.haTitleWrap {
+  display: flex;
+  align-items: center;
+}
+
+.haUpdating {
+  font-size: 14px;
+  opacity: 0.55;
+  margin-left: 6px;
+}
+
 

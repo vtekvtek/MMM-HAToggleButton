@@ -1,20 +1,40 @@
+/* Container */
 .haToggleWrap {
   width: 320px;
 }
 
+/* Row card */
 .haToggleRow {
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.02);
   margin-bottom: 10px;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
+/* Subtle press feedback */
 .haToggleRow:active {
   background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.14);
 }
 
+/* OFF state slightly dimmer */
+.haToggleRow:not(.isOn) {
+  opacity: 0.85;
+}
+
+/* ON row slightly brighter */
+.haToggleRow.isOn {
+  opacity: 1;
+}
+
+/* Busy state */
+.haToggleRow.isBusy {
+  opacity: 0.60;
+}
+
+/* Button layout */
 .haToggleButton {
   display: flex;
   align-items: center;
@@ -24,6 +44,12 @@
   user-select: none;
 }
 
+/* Label area */
+.haTitleWrap {
+  display: flex;
+  align-items: center;
+}
+
 .haLabel {
   font-size: 18px;
   line-height: 1.15;
@@ -31,6 +57,13 @@
   opacity: 0.92;
 }
 
+.haUpdating {
+  font-size: 14px;
+  opacity: 0.55;
+  margin-left: 6px;
+}
+
+/* Right side meta */
 .haMeta {
   display: flex;
   flex-direction: column;
@@ -48,48 +81,20 @@
   width: 54px;
   height: 28px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
   position: relative;
+  transition: background 120ms ease, border-color 120ms ease;
 }
 
+/* Knob */
 .haKnob {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.65);
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   left: 3px;
-  transition: left 140ms ease;
-  opacity: 0.85;
-}
-
-/* ON state - subtle warm amber */
-.haToggleRow.isOn .haSwitch {
-  border-color: rgba(255, 170, 90, 0.55);
-  background: rgba(255, 160, 70, 0.18);
-}
-
-.haToggleRow.isOn .haKnob {
-  background: rgba(255, 200, 140, 0.95);
-  box-shadow: 0 0 6px rgba(255, 160, 70, 0.25);
-}
-
-/* Busy state */
-.haToggleRow.isBusy {
-  opacity: 0.65;
-}
-.haTitleWrap {
-  display: flex;
-  align-items: center;
-}
-
-.haUpdating {
-  font-size: 14px;
-  opacity: 0.55;
-  margin-left: 6px;
-}
-
-
+  transition: left 140ms ease, background 120ms ease, box-shadow 120ms ease

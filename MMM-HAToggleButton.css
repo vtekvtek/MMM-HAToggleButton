@@ -97,4 +97,30 @@
   top: 50%;
   transform: translateY(-50%);
   left: 3px;
-  transition: left 140ms ease, background 120ms ease, box-shadow 120ms ease
+  opacity: 0.9;
+  transition: left 140ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+/* OFF styles (slightly dimmer) */
+.haToggleRow:not(.isOn) .haSwitch {
+  border-color: rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+
+.haToggleRow:not(.isOn) .haKnob {
+  left: 3px;
+  background: rgba(255,255,255,0.55);
+  box-shadow: none;
+}
+
+/* ON styles (brighter, subtle warm amber) */
+.haToggleRow.isOn .haSwitch {
+  border-color: rgba(255, 170, 90, 0.55);
+  background: rgba(255, 160, 70, 0.22);
+}
+
+.haToggleRow.isOn .haKnob {
+  left: 29px;
+  background: rgba(255, 210, 150, 0.98);
+  box-shadow: 0 0 8px rgba(255, 160, 70, 0.30);
+}

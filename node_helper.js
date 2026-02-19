@@ -7,23 +7,18 @@ async function haFetch({ haUrl, token, path, method = "GET", body }) {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : undefined
   });
 
   const text = await res.text();
   let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch (e) {}
+  try { data = text ? JSON.parse(text) : null; } catch (e) {}
 
   if (!res.ok) {
-    const msg =
-      data?.message || data?.error || text || `${res.status} ${res.statusText}`;
-    const err = new Error(msg);
-    err.status = res.status;
-    throw err;
+    const msg = data?.message || data?.error || text || `${res.status} ${res.statusText}`;
+    throw new Error(msg);
   }
 
   return data;
@@ -37,50 +32,42 @@ module.exports = NodeHelper.create({
   start() {
     this.haUrl = null;
     this.token = null;
-    this.entityId = null;
+    this.entities = [];
     this.timer = null;
+
+    console.log("[MMM-HAToggleButton] node_helper started");
   },
 
   socketNotificationReceived(notification, payload) {
-    if (notification === "HA_INIT") {
-      this.haUrl = payload.haUrl;
-      this.token = payload.token;
-      this.entityId = payload.entityId;
+    if (notification === "HA_INIT_MULTI") {
+      this.haUrl = payload?.haUrl || null;
+      this.token = payload?.token || null;
+      this.entities = Array.isArray(payload?.entities) ? payload.entities : [];
+
+      console.log("[MMM-HAToggleButton] init entities:", this.entities.map(e => e.entityId).filter(Boolean));
 
       this._clearTimer();
-      this._pollState();
-      this.timer = setInterval(
-        () => this._pollState(),
-        payload.updateInterval || 5000
-      );
+      this._pollAll();
+      this.timer = setInterval(() => this._pollAll(), payload?.updateInterval || 5000);
     }
 
-    if (notification === "HA_TOGGLE") {
-      this._toggle(payload.entityId);
-    }
-  },
-
-  async _pollState() {
-    if (!this.haUrl || !this.token || !this.entityId) return;
-
-    try {
-      const data = await haFetch({
-        haUrl: this.haUrl,
-        token: this.token,
-        path: `/api/states/${this.entityId}`,
-        method: "GET",
-      });
-
-      this.sendSocketNotification("HA_STATE", { state: data?.state || null });
-    } catch (e) {
-      this.sendSocketNotification("HA_ERROR", {
-        message: `State read failed: ${e.message}`,
-        state: null,
-      });
+    if (notification === "HA_TOGGLE_ENTITY") {
+      const entityId = payload?.entityId;
+      console.log("[MMM-HAToggleButton] toggle requested:", entityId);
+      this._toggle(entityId);
     }
   },
 
-  // New: poll a specific entity (so UI always clears after toggle)
+  async _pollAll() {
+    if (!this.haUrl || !this.token || !this.entities.length) return;
+
+    for (const ent of this.entities) {
+      const entityId = ent?.entityId;
+      if (!entityId) continue;
+      await this._pollOne(entityId);
+    }
+  },
+
   async _pollOne(entityId) {
     if (!this.haUrl || !this.token || !entityId) return;
 
@@ -89,14 +76,17 @@ module.exports = NodeHelper.create({
         haUrl: this.haUrl,
         token: this.token,
         path: `/api/states/${entityId}`,
-        method: "GET",
+        method: "GET"
       });
 
-      this.sendSocketNotification("HA_STATE", { state: data?.state || null });
+      this.sendSocketNotification("HA_MULTI_STATE", {
+        entityId,
+        state: data?.state || null
+      });
     } catch (e) {
-      this.sendSocketNotification("HA_ERROR", {
-        message: `State read failed: ${e.message}`,
-        state: null,
+      this.sendSocketNotification("HA_MULTI_ERROR", {
+        entityId,
+        message: `State read failed for ${entityId}: ${e.message}`
       });
     }
   },
@@ -104,24 +94,30 @@ module.exports = NodeHelper.create({
   async _toggle(entityId) {
     if (!this.haUrl || !this.token || !entityId) return;
 
-    const domain = domainFromEntity(entityId) || "light";
+    const domain = domainFromEntity(entityId);
+    if (!domain) {
+      this.sendSocketNotification("HA_MULTI_ERROR", {
+        entityId,
+        message: `Bad entityId: ${entityId}`
+      });
+      return;
+    }
 
     try {
       await haFetch({
         haUrl: this.haUrl,
         token: this.token,
-        // New: choose service based on entity domain, not hardcoded to light
         path: `/api/services/${domain}/toggle`,
         method: "POST",
-        body: { entity_id: entityId },
+        body: { entity_id: entityId }
       });
 
-      // New: immediately refresh THIS entity so “Updating…” clears reliably
+      // Immediately refresh just this entity so UI clears Updating fast
       setTimeout(() => this._pollOne(entityId), 250);
     } catch (e) {
-      this.sendSocketNotification("HA_ERROR", {
-        message: `Toggle failed: ${e.message}`,
-        state: null,
+      this.sendSocketNotification("HA_MULTI_ERROR", {
+        entityId,
+        message: `Toggle failed for ${entityId}: ${e.message}`
       });
     }
   },
@@ -129,5 +125,5 @@ module.exports = NodeHelper.create({
   _clearTimer() {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
-  },
+  }
 });

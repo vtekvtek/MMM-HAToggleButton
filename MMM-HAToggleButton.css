@@ -124,3 +124,11 @@
   background: rgba(255, 225, 180, 1);
   box-shadow: 0 0 10px rgba(255, 160, 70, 0.45);
 }
+
+/* Center ONLY MMM-HAToggleButton inside its region */
+.MMM-HAToggleButton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+

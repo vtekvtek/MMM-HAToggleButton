@@ -17,6 +17,9 @@ Module.register("MMM-HAToggleButton", {
   },
 
   start() {
+  console.log("[MMM-HAToggleButton] Using HA URL:", this.config.haUrl);
+
+    
     this.states = {}; // entityId -> "on"/"off"/etc
     this.busy = {};   // entityId -> boolean
     this.lastTap = 0;
@@ -123,4 +126,5 @@ Module.register("MMM-HAToggleButton", {
     }
   }
 });
+
 

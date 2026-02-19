@@ -61,15 +61,25 @@ Module.register("MMM-HAToggleButton", {
 
       const row = document.createElement("div");
       row.className = "haToggleRow";
+      row.classList.toggle("isOn", state === "on");
+      row.classList.toggle("isBusy", isBusy);
 
       const btn = document.createElement("div");
       btn.className = "haToggleButton";
-      btn.classList.toggle("isOn", state === "on");
-      btn.classList.toggle("isOff", state === "off");
 
       const title = document.createElement("div");
       title.className = "haLabel";
       title.textContent = label;
+
+      const meta = document.createElement("div");
+      meta.className = "haMeta";
+
+      const sw = document.createElement("div");
+      sw.className = "haSwitch";
+
+      const knob = document.createElement("div");
+      knob.className = "haKnob";
+      sw.appendChild(knob);
 
       const stateLine = document.createElement("div");
       stateLine.className = "haState";
@@ -77,8 +87,11 @@ Module.register("MMM-HAToggleButton", {
       else if (state) stateLine.textContent = this.config.showStateText ? `Now: ${state}` : "";
       else stateLine.textContent = "Loading…";
 
+      meta.appendChild(sw);
+      meta.appendChild(stateLine);
+
       btn.appendChild(title);
-      btn.appendChild(stateLine);
+      btn.appendChild(meta);
 
       btn.addEventListener("click", () => {
         const now = Date.now();
@@ -92,7 +105,6 @@ Module.register("MMM-HAToggleButton", {
 
         this.sendSocketNotification("HA_TOGGLE_ENTITY", { entityId });
 
-        // Safety timeout so it never hangs forever
         setTimeout(() => {
           if (this.busy[entityId]) {
             this.busy[entityId] = false;

@@ -7,17 +7,20 @@ async function haFetch({ haUrl, token, path, method = "GET", body }) {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (e) {}
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (e) {}
 
   if (!res.ok) {
-    const msg = data?.message || data?.error || text || `${res.status} ${res.statusText}`;
+    const msg =
+      data?.message || data?.error || text || `${res.status} ${res.statusText}`;
     throw new Error(msg);
   }
 
@@ -26,6 +29,10 @@ async function haFetch({ haUrl, token, path, method = "GET", body }) {
 
 function domainFromEntity(entityId) {
   return String(entityId || "").split(".")[0] || "";
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 module.exports = NodeHelper.create({
@@ -44,11 +51,17 @@ module.exports = NodeHelper.create({
       this.token = payload?.token || null;
       this.entities = Array.isArray(payload?.entities) ? payload.entities : [];
 
-      console.log("[MMM-HAToggleButton] init entities:", this.entities.map(e => e.entityId).filter(Boolean));
+      console.log(
+        "[MMM-HAToggleButton] init entities:",
+        this.entities.map((e) => e.entityId).filter(Boolean)
+      );
 
       this._clearTimer();
       this._pollAll();
-      this.timer = setInterval(() => this._pollAll(), payload?.updateInterval || 5000);
+      this.timer = setInterval(
+        () => this._pollAll(),
+        payload?.updateInterval || 5000
+      );
     }
 
     if (notification === "HA_TOGGLE_ENTITY") {
@@ -76,18 +89,35 @@ module.exports = NodeHelper.create({
         haUrl: this.haUrl,
         token: this.token,
         path: `/api/states/${entityId}`,
-        method: "GET"
+        method: "GET",
       });
 
       this.sendSocketNotification("HA_MULTI_STATE", {
         entityId,
-        state: data?.state || null
+        state: data?.state || null,
       });
+
+      return data?.state || null;
     } catch (e) {
       this.sendSocketNotification("HA_MULTI_ERROR", {
         entityId,
-        message: `State read failed for ${entityId}: ${e.message}`
+        message: `State read failed for ${entityId}: ${e.message}`,
       });
+      return null;
+    }
+  },
+
+  // New: after toggle, keep refreshing until the state changes (or timeout)
+  async _refreshUntilChanged(entityId, previousState) {
+    const tries = 6;     // ~2.1s total
+    const delayMs = 350;
+
+    for (let i = 0; i < tries; i++) {
+      await sleep(delayMs);
+      const newState = await this._pollOne(entityId);
+
+      // If we had a previous state and it changed, we can stop early
+      if (previousState && newState && newState !== previousState) return;
     }
   },
 
@@ -98,9 +128,23 @@ module.exports = NodeHelper.create({
     if (!domain) {
       this.sendSocketNotification("HA_MULTI_ERROR", {
         entityId,
-        message: `Bad entityId: ${entityId}`
+        message: `Bad entityId: ${entityId}`,
       });
       return;
+    }
+
+    // Capture current state so we can detect when it flips
+    let prevState = null;
+    try {
+      const cur = await haFetch({
+        haUrl: this.haUrl,
+        token: this.token,
+        path: `/api/states/${entityId}`,
+        method: "GET",
+      });
+      prevState = cur?.state || null;
+    } catch (e) {
+      // still attempt toggle even if read fails
     }
 
     try {
@@ -109,15 +153,15 @@ module.exports = NodeHelper.create({
         token: this.token,
         path: `/api/services/${domain}/toggle`,
         method: "POST",
-        body: { entity_id: entityId }
+        body: { entity_id: entityId },
       });
 
-      // Immediately refresh just this entity so UI clears Updating fast
-      setTimeout(() => this._pollOne(entityId), 250);
+      // Instead of a single quick poll, retry until state flips
+      this._refreshUntilChanged(entityId, prevState);
     } catch (e) {
       this.sendSocketNotification("HA_MULTI_ERROR", {
         entityId,
-        message: `Toggle failed for ${entityId}: ${e.message}`
+        message: `Toggle failed for ${entityId}: ${e.message}`,
       });
     }
   },
@@ -125,5 +169,5 @@ module.exports = NodeHelper.create({
   _clearTimer() {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
-  }
+  },
 });

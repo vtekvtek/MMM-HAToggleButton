@@ -6,24 +6,31 @@ async function haFetch({ haUrl, token, path, method = "GET", body }) {
   const res = await fetch(url, {
     method,
     headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (e) {}
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (e) {}
 
   if (!res.ok) {
-    const msg = data?.message || data?.error || text || `${res.status} ${res.statusText}`;
+    const msg =
+      data?.message || data?.error || text || `${res.status} ${res.statusText}`;
     const err = new Error(msg);
     err.status = res.status;
     throw err;
   }
 
   return data;
+}
+
+function domainFromEntity(entityId) {
+  return String(entityId || "").split(".")[0] || "";
 }
 
 module.exports = NodeHelper.create({
@@ -42,7 +49,10 @@ module.exports = NodeHelper.create({
 
       this._clearTimer();
       this._pollState();
-      this.timer = setInterval(() => this._pollState(), payload.updateInterval || 5000);
+      this.timer = setInterval(
+        () => this._pollState(),
+        payload.updateInterval || 5000
+      );
     }
 
     if (notification === "HA_TOGGLE") {
@@ -58,36 +68,60 @@ module.exports = NodeHelper.create({
         haUrl: this.haUrl,
         token: this.token,
         path: `/api/states/${this.entityId}`,
-        method: "GET"
+        method: "GET",
       });
 
       this.sendSocketNotification("HA_STATE", { state: data?.state || null });
     } catch (e) {
       this.sendSocketNotification("HA_ERROR", {
         message: `State read failed: ${e.message}`,
-        state: null
+        state: null,
+      });
+    }
+  },
+
+  // New: poll a specific entity (so UI always clears after toggle)
+  async _pollOne(entityId) {
+    if (!this.haUrl || !this.token || !entityId) return;
+
+    try {
+      const data = await haFetch({
+        haUrl: this.haUrl,
+        token: this.token,
+        path: `/api/states/${entityId}`,
+        method: "GET",
+      });
+
+      this.sendSocketNotification("HA_STATE", { state: data?.state || null });
+    } catch (e) {
+      this.sendSocketNotification("HA_ERROR", {
+        message: `State read failed: ${e.message}`,
+        state: null,
       });
     }
   },
 
   async _toggle(entityId) {
-    if (!this.haUrl || !this.token) return;
+    if (!this.haUrl || !this.token || !entityId) return;
+
+    const domain = domainFromEntity(entityId) || "light";
 
     try {
       await haFetch({
         haUrl: this.haUrl,
         token: this.token,
-        path: `/api/services/light/toggle`,
+        // New: choose service based on entity domain, not hardcoded to light
+        path: `/api/services/${domain}/toggle`,
         method: "POST",
-        body: { entity_id: entityId }
+        body: { entity_id: entityId },
       });
 
-      // after toggling, refresh quickly
-      setTimeout(() => this._pollState(), 400);
+      // New: immediately refresh THIS entity so “Updating…” clears reliably
+      setTimeout(() => this._pollOne(entityId), 250);
     } catch (e) {
       this.sendSocketNotification("HA_ERROR", {
         message: `Toggle failed: ${e.message}`,
-        state: null
+        state: null,
       });
     }
   },
@@ -95,5 +129,5 @@ module.exports = NodeHelper.create({
   _clearTimer() {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
-  }
+  },
 });

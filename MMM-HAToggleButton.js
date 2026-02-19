@@ -67,9 +67,21 @@ Module.register("MMM-HAToggleButton", {
       const btn = document.createElement("div");
       btn.className = "haToggleButton";
 
+      const titleWrap = document.createElement("div");
+      titleWrap.className = "haTitleWrap";
+
       const title = document.createElement("div");
       title.className = "haLabel";
       title.textContent = label;
+
+      if (isBusy) {
+      const updating = document.createElement("span");
+      updating.className = "haUpdating";
+      updating.textContent = " Updating…";
+      title.appendChild(updating);
+      }
+
+      titleWrap.appendChild(title);
 
       const meta = document.createElement("div");
       meta.className = "haMeta";
@@ -81,17 +93,18 @@ Module.register("MMM-HAToggleButton", {
       knob.className = "haKnob";
       sw.appendChild(knob);
 
+      meta.appendChild(sw);
+
+      if (!isBusy && this.config.showStateText) {
       const stateLine = document.createElement("div");
       stateLine.className = "haState";
-      if (isBusy) stateLine.textContent = "Updating…";
-      else if (state) stateLine.textContent = this.config.showStateText ? `Now: ${state}` : "";
-      else stateLine.textContent = "Loading…";
-
-      meta.appendChild(sw);
+      stateLine.textContent = state ? `Now: ${state}` : "Loading…";
       meta.appendChild(stateLine);
+      }  
 
-      btn.appendChild(title);
+      btn.appendChild(titleWrap);
       btn.appendChild(meta);
+
 
       btn.addEventListener("click", () => {
         const now = Date.now();
@@ -147,3 +160,4 @@ Module.register("MMM-HAToggleButton", {
     }
   }
 });
+

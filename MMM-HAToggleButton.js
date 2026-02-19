@@ -61,7 +61,7 @@ Module.register("MMM-HAToggleButton", {
 
       const row = document.createElement("div");
       row.className = "haToggleRow";
-      row.classList.toggle("isOn", state === "on");
+      row.classList.toggle("isOn", String(state).toLowerCase() === "on");
       row.classList.toggle("isBusy", isBusy);
 
       const btn = document.createElement("div");
@@ -160,4 +160,5 @@ Module.register("MMM-HAToggleButton", {
     }
   }
 });
+
 

@@ -1,27 +1,27 @@
-/* Container */
+/* Container - narrower */
 .haToggleWrap {
-  width: 320px;
+  width: 260px;
 }
 
 /* Row card */
 .haToggleRow {
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.02);
-  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  margin-bottom: 8px;
   transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
 /* Subtle press feedback */
 .haToggleRow:active {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.22);
 }
 
 /* OFF state slightly dimmer */
 .haToggleRow:not(.isOn) {
-  opacity: 0.85;
+  opacity: 0.92;
 }
 
 /* ON row slightly brighter */
@@ -31,7 +31,7 @@
 
 /* Busy state */
 .haToggleRow.isBusy {
-  opacity: 0.60;
+  opacity: 0.65;
 }
 
 /* Button layout */
@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -51,15 +51,15 @@
 }
 
 .haLabel {
-  font-size: 18px;
-  line-height: 1.15;
+  font-size: 16px;
+  line-height: 1.2;
   letter-spacing: 0.2px;
-  opacity: 0.92;
+  opacity: 0.95;
 }
 
 .haUpdating {
-  font-size: 14px;
-  opacity: 0.55;
+  font-size: 13px;
+  opacity: 0.65;
   margin-left: 6px;
 }
 
@@ -68,59 +68,59 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 4px;
 }
 
 .haState {
-  font-size: 12px;
-  opacity: 0.55;
+  font-size: 11px;
+  opacity: 0.65;
 }
 
-/* Toggle pill */
+/* Toggle pill - slightly smaller */
 .haSwitch {
-  width: 54px;
-  height: 28px;
+  width: 46px;
+  height: 24px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.08);
   position: relative;
   transition: background 120ms ease, border-color 120ms ease;
 }
 
-/* Knob */
+/* Knob - smaller */
 .haKnob {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.75);
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   left: 3px;
-  opacity: 0.9;
+  opacity: 0.95;
   transition: left 140ms ease, background 120ms ease, box-shadow 120ms ease;
 }
 
-/* OFF styles (slightly dimmer) */
+/* OFF styles */
 .haToggleRow:not(.isOn) .haSwitch {
-  border-color: rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
 }
 
 .haToggleRow:not(.isOn) .haKnob {
   left: 3px;
-  background: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.70);
   box-shadow: none;
 }
 
-/* ON styles (brighter, subtle warm amber) */
+/* ON styles - brighter but still subtle */
 .haToggleRow.isOn .haSwitch {
-  border-color: rgba(255, 170, 90, 0.55);
-  background: rgba(255, 160, 70, 0.22);
+  border-color: rgba(255, 170, 90, 0.75);
+  background: rgba(255, 160, 70, 0.35);
 }
 
 .haToggleRow.isOn .haKnob {
-  left: 29px;
-  background: rgba(255, 210, 150, 0.98);
-  box-shadow: 0 0 8px rgba(255, 160, 70, 0.30);
+  left: 25px; /* adjusted for smaller switch */
+  background: rgba(255, 225, 180, 1);
+  box-shadow: 0 0 10px rgba(255, 160, 70, 0.45);
 }

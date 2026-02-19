@@ -5,12 +5,13 @@ Module.register("MMM-HAToggleButton", {
     haUrl: "",
     token: "",
 
-    // No entities here, must be provided in config.js
+    // Must be provided in config.js
     entities: [],
 
     // UI
     showStateText: true,
     debounceMs: 400,
+    requestTimeoutMs: 5000,
 
     // State refresh
     updateInterval: 5000
@@ -19,17 +20,19 @@ Module.register("MMM-HAToggleButton", {
   start() {
     this.states = {}; // entityId -> "on"/"off"/etc
     this.busy = {};   // entityId -> boolean
-    this.lastTap = 0;
+    this.lastTapAt = 0;
 
-    // Only init if entities exist in config.js
-    if (Array.isArray(this.config.entities) && this.config.entities.length > 0) {
-      this.sendSocketNotification("HA_INIT_MULTI", {
-        haUrl: this.config.haUrl,
-        token: this.config.token,
-        entities: this.config.entities,
-        updateInterval: this.config.updateInterval
-      });
-    }
+    const ents = Array.isArray(this.config.entities) ? this.config.entities : [];
+    const ok = !!this.config.haUrl && !!this.config.token && ents.length > 0;
+
+    if (!ok) return;
+
+    this.sendSocketNotification("HA_INIT_MULTI", {
+      haUrl: this.config.haUrl,
+      token: this.config.token,
+      entities: ents,
+      updateInterval: this.config.updateInterval
+    });
   },
 
   getStyles() {
@@ -41,25 +44,26 @@ Module.register("MMM-HAToggleButton", {
     wrapper.className = "haToggleWrap";
 
     const ents = Array.isArray(this.config.entities) ? this.config.entities : [];
+    const ok = !!this.config.haUrl && !!this.config.token && ents.length > 0;
 
-    if (ents.length === 0) {
-      // Render nothing if not configured
+    if (!ok) {
       wrapper.style.display = "none";
       return wrapper;
     }
 
     ents.forEach((ent) => {
-      const entityId = ent.entityId;
+      const entityId = ent?.entityId;
       if (!entityId) return;
 
-      const label = ent.label || entityId;
-
+      const label = ent?.label || entityId;
       const state = this.states[entityId];
       const isBusy = !!this.busy[entityId];
 
+      const row = document.createElement("div");
+      row.className = "haToggleRow";
+
       const btn = document.createElement("div");
       btn.className = "haToggleButton";
-
       btn.classList.toggle("isOn", state === "on");
       btn.classList.toggle("isOff", state === "off");
 
@@ -69,22 +73,17 @@ Module.register("MMM-HAToggleButton", {
 
       const stateLine = document.createElement("div");
       stateLine.className = "haState";
-
-      if (isBusy) {
-        stateLine.textContent = "Updating…";
-      } else if (state) {
-        stateLine.textContent = this.config.showStateText ? `Now: ${state}` : "";
-      } else {
-        stateLine.textContent = "Loading…";
-      }
+      if (isBusy) stateLine.textContent = "Updating…";
+      else if (state) stateLine.textContent = this.config.showStateText ? `Now: ${state}` : "";
+      else stateLine.textContent = "Loading…";
 
       btn.appendChild(title);
       btn.appendChild(stateLine);
 
       btn.addEventListener("click", () => {
         const now = Date.now();
-        if (now - this.lastTap < this.config.debounceMs) return;
-        this.lastTap = now;
+        if (now - this.lastTapAt < this.config.debounceMs) return;
+        this.lastTapAt = now;
 
         if (this.busy[entityId]) return;
 
@@ -92,9 +91,22 @@ Module.register("MMM-HAToggleButton", {
         this.updateDom();
 
         this.sendSocketNotification("HA_TOGGLE_ENTITY", { entityId });
+
+        // Safety timeout so it never hangs forever
+        setTimeout(() => {
+          if (this.busy[entityId]) {
+            this.busy[entityId] = false;
+            this.sendNotification("SHOW_ALERT", {
+              title: "Home Assistant",
+              message: `No response toggling ${label}, check pm2 logs`
+            });
+            this.updateDom();
+          }
+        }, this.config.requestTimeoutMs);
       });
 
-      wrapper.appendChild(btn);
+      row.appendChild(btn);
+      wrapper.appendChild(row);
     });
 
     return wrapper;
@@ -102,27 +114,24 @@ Module.register("MMM-HAToggleButton", {
 
   socketNotificationReceived(notification, payload) {
     if (notification === "HA_MULTI_STATE") {
-      const { entityId, state } = payload || {};
-      if (entityId) {
-        this.states[entityId] = state ?? null;
-        this.busy[entityId] = false;
-        this.updateDom();
-      }
+      const entityId = payload?.entityId;
+      if (!entityId) return;
+
+      this.states[entityId] = payload?.state ?? null;
+      this.busy[entityId] = false;
+      this.updateDom();
     }
 
     if (notification === "HA_MULTI_ERROR") {
-      const { entityId, message } = payload || {};
+      const entityId = payload?.entityId;
       if (entityId) this.busy[entityId] = false;
 
       this.sendNotification("SHOW_ALERT", {
         title: "Home Assistant",
-        message: message || "Unknown error"
+        message: payload?.message || "Unknown error"
       });
 
       this.updateDom();
     }
   }
 });
-
-
-
